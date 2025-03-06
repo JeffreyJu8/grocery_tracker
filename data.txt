@@ -1,1 +1,14 @@
-{"message":"Item Added to List!","name":"apple","price":1,"quantity":2,"purchased":false}
+[
+  {
+    "name": "orange",
+    "price": 2,
+    "quantity": 3,
+    "purchased": true
+  },
+  {
+    "name": "apple",
+    "price": 1,
+    "quantity": 2,
+    "purchased": false
+  }
+]
