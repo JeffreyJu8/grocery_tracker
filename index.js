@@ -104,7 +104,7 @@ const server = http.createServer((req, res) => {
                         let itemName = parts[2];
     
                         // Log extracted item
-                        logger.info(`Requested item: ${itemName}`);
+                        logger.info(`Updating item: ${itemName}`);
 
                         // Validate input
                         if (!name || !price || !quantity || purchased === undefined) {
@@ -153,6 +153,60 @@ const server = http.createServer((req, res) => {
                                 console.log('Item Updated!');
                                 res.writeHead(200, contentType);
                                 res.end(JSON.stringify(items[modifyIndex]));
+                            });
+                        });
+
+
+                        break;
+
+                    case "DELETE":
+                        const urlparts = req.url.split("/"); 
+                        let deletingItemName = urlparts[2];
+    
+                        // Log extracted item
+                        logger.info(`Updating item: ${deletingItemName}`);
+
+                        fs.readFile('data.txt', 'utf8', (err, data) => {
+                            if(err){
+                                console.error(err);
+                                res.writeHead(500, contentType);
+                                res.end(JSON.stringify({ error: "Error reading data file" }));
+                                return;
+                            }
+
+                            // console.log(data);
+                            let items = [];
+
+                            try{
+                                items = JSON.parse(data);
+                                if (!Array.isArray(items)) {
+                                    items = [];
+                                }
+                            }
+                            catch (e){
+                                items = [];
+                            }
+
+                            let deletingIndex = items.findIndex((item) => item.name === deletingItemName);
+                            if (deletingIndex === -1) {
+                                res.writeHead(404, contentType);
+                                res.end(JSON.stringify({ message: "Item not found" }));
+                                return;
+                            }
+                            
+                            deletedItem = items[deletingIndex];
+                            // Delete item
+                            items.splice(deletingIndex, 1);
+                        
+                            // Save back to file
+                            fs.writeFile('data.txt', JSON.stringify(items, null, 2), 'utf8', (err) => {
+                                if (err) {
+                                    console.error('Error updating file:', err);
+                                    return;
+                                }
+                                console.log('Item Deleted!');
+                                res.writeHead(200, contentType);
+                                res.end(JSON.stringify(deletedItem));
                             });
                         });
 

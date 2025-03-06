@@ -2,13 +2,7 @@
   {
     "name": "orange",
     "price": 2,
-    "quantity": 3,
+    "quantity": 10,
     "purchased": true
-  },
-  {
-    "name": "apple",
-    "price": 1,
-    "quantity": 2,
-    "purchased": false
   }
 ]
