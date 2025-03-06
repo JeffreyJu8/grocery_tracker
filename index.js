@@ -1,101 +1,86 @@
-// Import the readline module for handling user input in the console
-const readline = require('readline');
-const rl = readline.createInterface({
-  input: process.stdin, // Read from standard input (keyboard)
-  output: process.stdout // Write to standard output (console)
+// record user response with http
+// add the user response to data.txt with fs
+// use fs to read data.json
+// 
+
+
+const {logger} = require('./util/logger');
+const http = require('http');
+const fs = require('fs');
+
+const PORT = 3000;
+
+fs.readFile('data.txt', 'utf8', (err, data) => {
+    if(err){
+        console.error(err);
+        return;
+    }
+    console.log(data);
 });
 
-const grocery_item = () => ({
-    name: "",
-    quantity: 0,
-    price: 0.0,
-    bought: false
-});
+const server = http.createServer((req, res) => {
+    let body = "";
 
-// const grocery_list = [grocery_item()];
-// console.log(grocery_list);
+    req
+        .on('data', (chunk) => {
+            body += chunk;
+        })
+        .on("end", () => {
+            body = body.length > 0 ? JSON.parse(body) : {};
 
-let grocery_list = [];
+            const contentType = {"Content-Type": "application/json"};
 
-rl.on('line', (line) => {
-    console.log(line);
-});
+            if (req.url.startsWith("/items")){
+                logger.info(req.url.split('/'));
+                let index = parseInt(req.url.split("/")[2]);
 
-rl.once('close', () => {
-     // end of input
-     console.log("Goodbye");
- });
+                switch(req.method){
+                    case "POST":
+                        const {name, price, quantity, purchased} = body;
+                        if (!name || !price || !quantity || purchased == undefined){
+                            res.writeHead(400, contentType);
+                            res.end(
+                                JSON.stringify({
+                                    message: "Please provide a valid name, price, quantity, and whether you have purchased it!"
+                                })
+                            )
+                        }
+                        else{
+
+                            const content = JSON.stringify({
+                                    message: "Item Added to List!",
+                                    name,
+                                    price,
+                                    quantity,
+                                    purchased
+                            });
 
 
-const removeItem = () => {
-    rl.question('Would you like to remove an item from the grocery list? (Y/N) ', (remove) => {
-        console.log(remove);
+                            fs.writeFile('data.txt', content, 'utf8', (err) => {
+                                if(err){
+                                    console.error(err);
+                                    return;
+                                }
 
-        if(remove.toLocaleLowerCase() == 'y'){
-            rl.question('What is the name of the item you would like to remove? ', (remove_item) => {
-                console.log(remove_item);
+                                console.log('File has been written');
+                                res.writeHead(201, contentType);
+                                res.end(content);
+                            });
 
-                // remove the item from the list
-                let removeIndex = grocery_list.findIndex(function(word) {return word.name == remove_item});
-                delete grocery_list[removeIndex];
-
-                removeItem();
-            });
-        }
-
-        else{
-            rl.question('Would you like to add another item? (Y/N) ', (add) => {
-                console.log(add);
-
-                if(add.toLocaleLowerCase() == 'y'){
-                    askQuestions();
+                            break;
+                            
+                        }
                 }
+            }
+        })
+});
 
-                else{
-                    console.log("Final Grocery List: ", grocery_list);
-                    rl.close();
-                }
-            });
-        }
-    });
+if (fs.existsSync('data.txt')){
+    console.log("File exists");
+}else{
+    console.log("File does not exist")
 }
 
-
-const askQuestions = () => {
-    const item = grocery_item();
-    grocery_list.push(item);
-
-    rl.question('Enter name: ', (name) => {
-        console.log(name);
-
-        item.name = name;
-
-        rl.question('Enter Quantity: ', (quantity) => {
-            console.log(quantity);
-
-            item.quantity = quantity;
-
-            rl.question('Enter Price: ', (price) =>{
-                console.log(price);
-
-                item.price = price;
-
-                rl.question('Bought? (Y/N) ', (bought) => {
-                    console.log(bought);
-
-                    item.bought = bought;
-
-                    removeItem();
-                });
-            });
-        });
-    });
-}
-
-askQuestions();
-
-
-
-
-
-
+server.listen(PORT, () => {
+    logger.info(`Server is listening on http://localhost:${PORT}`);
+});
