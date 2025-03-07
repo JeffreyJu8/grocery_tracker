@@ -4,11 +4,24 @@ const fs = require('fs');
 
 const PORT = 3000;
 
+let grocery_list = []
+
 fs.readFile('data.txt', 'utf8', (err, data) => {
     if(err){
         console.error(err);
         return;
     }
+
+    try{
+        grocery_list = JSON.parse(data);
+        if(!Array.isArray(grocery_list)){
+            grocery_list = [];
+        }
+    }
+    catch(e){
+        grocery_list = [];
+    }
+    
     console.log(data);
 });
 
@@ -59,44 +72,28 @@ const server = http.createServer((req, res) => {
                             )
                             return;
                         }
-                        else{
-                            const item = { name, price, quantity, purchased };
 
-                            console.log("item: ", item);
+                        const item = { name, price, quantity, purchased };
 
-                            fs.readFile('data.txt', 'utf8', (err, data) => {
-                                let items = [];
+                        console.log("item: ", item);
+                        
 
-                                try{
-                                    items = JSON.parse(data);
-                                    if (!Array.isArray(items)) {
-                                        items = [];
-                                    }
-                                }
-                                catch (e){
-                                    items = [];
-                                }
-                                
+                        grocery_list.push(item);
 
-                                console.log("items: ", items);
+                        console.log("grocery list after appending: ", grocery_list);
 
-                                items.push(item);
+                        fs.appendFile('data.txt', JSON.stringify(item, null, 2) + '\n', 'utf8', (err) => {
+                            if(err){
+                                console.error('Error Reading', err);
+                                return;
+                            }
 
-                                fs.writeFile('data.txt', JSON.stringify(items, null, 2), 'utf8', (err) => {
-                                    if(err){
-                                        console.error('Error Reading', err);
-                                        return;
-                                    }
+                            console.log('Item added to grocery list');
+                            res.writeHead(201, contentType);
+                            res.end(JSON.stringify(item));
+                        })
 
-                                    console.log('Item added to grocery list');
-                                    res.writeHead(201, contentType);
-                                    res.end(JSON.stringify(item));
-                                })
-                            });
-
-                            break;
-                            
-                        }
+                        break;
                     
                     case "PUT":
                         // name
@@ -113,49 +110,27 @@ const server = http.createServer((req, res) => {
                             return;
                         }
 
-                        fs.readFile('data.txt', 'utf8', (err, data) => {
-                            if(err){
-                                console.error(err);
-                                res.writeHead(500, contentType);
-                                res.end(JSON.stringify({ error: "Error reading data file" }));
+
+                        let modifyIndex = grocery_list.findIndex((item) => item.name === itemName);
+                        if (modifyIndex === -1) {
+                            res.writeHead(404, contentType);
+                            res.end(JSON.stringify({ message: "Item not found" }));
+                            return;
+                        }
+                    
+                        // Update item
+                        grocery_list[modifyIndex] = { name, price, quantity, purchased };
+                    
+                        // Save back to file
+                        fs.writeFile('data.txt', JSON.stringify(grocery_list, null, 2), 'utf8', (err) => {
+                            if (err) {
+                                console.error('Error updating file:', err);
                                 return;
                             }
-
-                            // console.log(data);
-                            let items = [];
-
-                            try{
-                                items = JSON.parse(data);
-                                if (!Array.isArray(items)) {
-                                    items = [];
-                                }
-                            }
-                            catch (e){
-                                items = [];
-                            }
-
-                            let modifyIndex = items.findIndex((item) => item.name === itemName);
-                            if (modifyIndex === -1) {
-                                res.writeHead(404, contentType);
-                                res.end(JSON.stringify({ message: "Item not found" }));
-                                return;
-                            }
-                        
-                            // Update item
-                            items[modifyIndex] = { name, price, quantity, purchased };
-                        
-                            // Save back to file
-                            fs.writeFile('data.txt', JSON.stringify(items, null, 2), 'utf8', (err) => {
-                                if (err) {
-                                    console.error('Error updating file:', err);
-                                    return;
-                                }
-                                console.log('Item Updated!');
-                                res.writeHead(200, contentType);
-                                res.end(JSON.stringify(items[modifyIndex]));
-                            });
+                            console.log('Item Updated!');
+                            res.writeHead(200, contentType);
+                            res.end(JSON.stringify(grocery_list[modifyIndex]));
                         });
-
 
                         break;
 
@@ -166,50 +141,27 @@ const server = http.createServer((req, res) => {
                         // Log extracted item
                         logger.info(`Updating item: ${deletingItemName}`);
 
-                        fs.readFile('data.txt', 'utf8', (err, data) => {
-                            if(err){
-                                console.error(err);
-                                res.writeHead(500, contentType);
-                                res.end(JSON.stringify({ error: "Error reading data file" }));
-                                return;
-                            }
-
-                            // console.log(data);
-                            let items = [];
-
-                            try{
-                                items = JSON.parse(data);
-                                if (!Array.isArray(items)) {
-                                    items = [];
-                                }
-                            }
-                            catch (e){
-                                items = [];
-                            }
-
-                            let deletingIndex = items.findIndex((item) => item.name === deletingItemName);
-                            if (deletingIndex === -1) {
-                                res.writeHead(404, contentType);
-                                res.end(JSON.stringify({ message: "Item not found" }));
-                                return;
-                            }
-                            
-                            deletedItem = items[deletingIndex];
-                            // Delete item
-                            items.splice(deletingIndex, 1);
+                        let deletingIndex = grocery_list.findIndex((item) => item.name === deletingItemName);
+                        if (deletingIndex === -1) {
+                            res.writeHead(404, contentType);
+                            res.end(JSON.stringify({ message: "Item not found" }));
+                            return;
+                        }
                         
-                            // Save back to file
-                            fs.writeFile('data.txt', JSON.stringify(items, null, 2), 'utf8', (err) => {
-                                if (err) {
-                                    console.error('Error updating file:', err);
-                                    return;
-                                }
-                                console.log('Item Deleted!');
-                                res.writeHead(200, contentType);
-                                res.end(JSON.stringify(deletedItem));
-                            });
+                        deletedItem = grocery_list[deletingIndex];
+                        // Delete item
+                        grocery_list.splice(deletingIndex, 1);
+                    
+                        // Save back to file
+                        fs.writeFile('data.txt', JSON.stringify(grocery_list, null, 2), 'utf8', (err) => {
+                            if (err) {
+                                console.error('Error updating file:', err);
+                                return;
+                            }
+                            console.log('Item Deleted!');
+                            res.writeHead(200, contentType);
+                            res.end(JSON.stringify(deletedItem));
                         });
-
 
                         break;
                 }

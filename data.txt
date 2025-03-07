@@ -1,8 +1,0 @@
-[
-  {
-    "name": "orange",
-    "price": 2,
-    "quantity": 10,
-    "purchased": true
-  }
-]
