@@ -21,7 +21,7 @@ fs.readFile('data.txt', 'utf8', (err, data) => {
     catch(e){
         grocery_list = [];
     }
-    
+
     console.log(data);
 });
 
@@ -46,6 +46,7 @@ const server = http.createServer((req, res) => {
                 switch(req.method){
 
                     case "GET":
+                        console.log("Get Request Received");
                         fs.readFile('data.txt', 'utf8', (err, data) => {
                             if(err){
                                 console.error(err);
@@ -54,10 +55,18 @@ const server = http.createServer((req, res) => {
                                 return;
                             }
                             // console.log(data);
-                            const parsedData = JSON.parse(data);
-                            res.writeHead(200, contentType);
-                            const content = JSON.stringify({data:parsedData});
-                            res.end(content);
+                            try{
+                                const parsedData = JSON.parse(data);
+                                res.writeHead(200, contentType);
+                                const content = JSON.stringify({data:parsedData});
+                                // console.log("Content: ", content);
+                                res.end(content);
+                            }
+                            catch(e){
+                                console.log("Grocery List is Empty");
+                                res.end();
+                            }
+                            
                         });
 
                         break;
@@ -82,7 +91,7 @@ const server = http.createServer((req, res) => {
 
                         console.log("grocery list after appending: ", grocery_list);
 
-                        fs.appendFile('data.txt', JSON.stringify(item, null, 2) + '\n', 'utf8', (err) => {
+                        fs.writeFile('data.txt', JSON.stringify(grocery_list, null, 2) + '\n', 'utf8', (err) => {
                             if(err){
                                 console.error('Error Reading', err);
                                 return;

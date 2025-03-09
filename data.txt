@@ -1,0 +1,14 @@
+[
+  {
+    "name": "orange",
+    "price": 1,
+    "quantity": 2,
+    "purchased": false
+  },
+  {
+    "name": "apple",
+    "price": 1,
+    "quantity": 2,
+    "purchased": false
+  }
+]
